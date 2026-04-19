@@ -3,11 +3,12 @@ const http = require('http');
 const fsSync = require('fs');
 const fs = require('fs').promises;
 const path = require('path');
+const superagent = require('superagent');
 
 program
-  .requiredOption('-h, --host <address>', 'адреса сервера')
-  .requiredOption('-p, --port <number>', 'порт сервера')
-  .requiredOption('-c, --cache <path>', 'шлях до директорії кешу');
+  .requiredOption('-h, --host <address>', '')
+  .requiredOption('-p, --port <number>', '')
+  .requiredOption('-c, --cache <path>', '');
 
 program.parse(process.argv);
 const options = program.opts();
@@ -34,11 +35,18 @@ const server = http.createServer(async (req, res) => {
         res.writeHead(200, { 'Content-Type': 'image/jpeg' });
         res.end(imageBuffer);
       } catch (err) {
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end('Not Found');
+        try {
+          const catResponse = await superagent.get(`https://http.cat/${httpCode}`);
+          const catBuffer = catResponse.body;
+          await fs.writeFile(filePath, catBuffer);
+          res.writeHead(200, { 'Content-Type': 'image/jpeg' });
+          res.end(catBuffer);
+        } catch (catErr) {
+          res.writeHead(404, { 'Content-Type': 'text/plain' });
+          res.end('Not Found');
+        }
       }
     } 
-    
     else if (req.method === 'PUT') {
       const chunks = [];
       req.on('data', chunk => chunks.push(chunk));
@@ -54,7 +62,6 @@ const server = http.createServer(async (req, res) => {
         }
       });
     } 
-    
     else if (req.method === 'DELETE') {
       try {
         await fs.unlink(filePath);
@@ -65,7 +72,6 @@ const server = http.createServer(async (req, res) => {
         res.end('Not Found');
       }
     } 
-    
     else {
       res.writeHead(405, { 'Content-Type': 'text/plain' });
       res.end('Method Not Allowed');
