@@ -19,6 +19,12 @@ if (!fsSync.existsSync(options.cache)) {
 }
 
 const server = http.createServer(async (req, res) => {
+
+  if (req.url === '/') {
+    res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+    return res.end('Кешуючий проксі-сервер працює! Використовуй шлях /<http-код>, наприклад: http://localhost:3000/200');
+  }
+
   const codeMatch = req.url.match(/^\/(\d+)$/);
   if (!codeMatch) {
     res.writeHead(404, { 'Content-Type': 'text/plain' });
